@@ -1,5 +1,7 @@
 /.idea/
 
+/logs/
+
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -37,4 +39,4 @@ build/
 .vscode/
 
 ### Mac OS ###
-.DS_Store
+.DS_Store!
