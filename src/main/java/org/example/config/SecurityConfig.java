@@ -30,6 +30,9 @@ public class SecurityConfig {
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests((auth) -> {
                     //auth.requestMatchers("/api/**").hasRole("user");
+                    auth.requestMatchers("/api/swagger**/**").permitAll();
+                    auth.requestMatchers("/api/api-docs").permitAll();
+                    auth.requestMatchers("/api/version").permitAll();
                     auth.requestMatchers("/api/getUsers").permitAll();
                     auth.requestMatchers("/api/saveUser").permitAll();
                     auth.requestMatchers("/api/updateUser/**").permitAll();

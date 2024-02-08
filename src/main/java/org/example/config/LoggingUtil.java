@@ -1,23 +1,53 @@
 package org.example.config;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.ContentCachingRequestWrapper;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 
-@RestController
-public class LoggingUtil {
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
-    Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
+@Component
+public class LoggingUtil extends OncePerRequestFilter {
 
-    @RequestMapping("/")
-    public String index() {
-        //logger.trace("A TRACE Message");
-        //logger.debug("A DEBUG Message");
-        //logger.info("An INFO Message");
-        //logger.warn("A WARN Message");
-        //logger.error("An ERROR Message");
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoggingUtil.class);
 
-        return "{\"message\": \"Welcome to the home of this app.\"}";
+
+    private String getStringValue(byte[] contentAsByteArray, String characterEncoding) {
+        try {
+            return new String(contentAsByteArray, 0, contentAsByteArray.length, characterEncoding);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        // TODO Auto-generated method stub
+        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
+        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
+
+        long startTime = System.currentTimeMillis();
+        filterChain.doFilter(requestWrapper, responseWrapper);
+        long timeTaken = System.currentTimeMillis() - startTime;
+
+        String requestBody = getStringValue(requestWrapper.getContentAsByteArray(),
+                request.getCharacterEncoding());
+        String responseBody = getStringValue(responseWrapper.getContentAsByteArray(),
+                response.getCharacterEncoding());
+
+        LOGGER.info(
+                "FINISHED PROCESSING : METHOD={}; ENDPOINT={}; DURATION={}; RESPONSE CODE={}; REQUEST BODY={}; RESPONSE={}",
+                request.getMethod(), request.getRequestURI(), timeTaken, response.getStatus(), requestBody, responseBody);
+        responseWrapper.copyBodyToResponse();
     }
 }
