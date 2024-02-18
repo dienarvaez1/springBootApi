@@ -31,9 +31,7 @@ public class User {
         return firstName;
     }
 
-    public String lastName() {
-        return lastName;
-    }
+    public String lastName() { return lastName; }
 
     public Timestamp setUpdatedAt(Timestamp updatedAt) {
         return updated_at;

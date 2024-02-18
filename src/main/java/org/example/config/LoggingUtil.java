@@ -45,9 +45,22 @@ public class LoggingUtil extends OncePerRequestFilter {
         String responseBody = getStringValue(responseWrapper.getContentAsByteArray(),
                 response.getCharacterEncoding());
 
-        LOGGER.info(
-                "FINISHED PROCESSING : METHOD={}; ENDPOINT={}; DURATION={}; RESPONSE CODE={}; REQUEST BODY={}; RESPONSE={}",
-                request.getMethod(), request.getRequestURI(), timeTaken, response.getStatus(), requestBody, responseBody);
+        int resCode = (response.getStatus());
+
+        //String resTrailer = String.valueOf((response.getHeader("Set-Cookie")));
+
+        if (resCode == 200) {
+            LOGGER.info
+                    ( "API CLIENT REQUEST: CLIENT={}; AUTH={}; METHOD={}; TRAILERS={}; ENDPOINT={}; PARAMS={}; RESPONSE CODE={}; DURATION={}; REQUEST BODY={}; RESPONSE={}",
+                            request.getRemoteHost(), request.getHeader("Authorization"), request.getMethod(), response.getTrailerFields(), request.getRequestURI(), request.getParameterMap(), response.getStatus(), timeTaken, requestBody, responseBody
+                    );
+        } else {
+            LOGGER.error
+                    ( "API CLIENT REQUEST: CLIENT={}; AUTH={}; METHOD={}; TRAILERS={}; ENDPOINT={}; PARAMS={}; RESPONSE CODE={}; DURATION={}; REQUEST BODY={}; RESPONSE={}",
+                            request.getRemoteHost(), request.getHeader("Authorization"), request.getMethod(), response.getTrailerFields(), request.getRequestURI(), request.getParameterMap(), response.getStatus(), timeTaken, requestBody, responseBody
+                    );
+        }
+
         responseWrapper.copyBodyToResponse();
     }
 }

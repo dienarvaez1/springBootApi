@@ -4,8 +4,11 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -24,18 +27,23 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoggingUtil.class);
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests((auth) -> {
                     //auth.requestMatchers("/api/**").hasRole("user");
-                    auth.requestMatchers("/api/swagger**/**").permitAll();
-                    auth.requestMatchers("/api/api-docs").permitAll();
-                    auth.requestMatchers("/api/version").permitAll();
-                    auth.requestMatchers("/api/getUsers").permitAll();
-                    auth.requestMatchers("/api/saveUser").permitAll();
-                    auth.requestMatchers("/api/updateUser/**").permitAll();
+                    auth.requestMatchers("/api/swagger**/**").authenticated();
+                    auth.requestMatchers("/api/api-docs").authenticated();
+                    auth.requestMatchers("/actuator/**").authenticated();
+                    auth.requestMatchers("/api/version").authenticated();
+                    auth.requestMatchers(HttpMethod.GET, "/api/getUsers").authenticated();
+                    auth.requestMatchers(HttpMethod.GET, "/api/getUser/**").authenticated();
+                    auth.requestMatchers(HttpMethod.POST, "/api/addUser").authenticated();
+                    auth.requestMatchers(HttpMethod.PUT, "/api/updateUser/**").authenticated();
+                    auth.requestMatchers(HttpMethod.DELETE, "/api/deleteUser/**").authenticated();
                     auth.anyRequest().authenticated();
                 })
 
