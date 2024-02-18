@@ -1,0 +1,41 @@
+server:
+  port: 8088
+
+spring:
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/springboot_app
+    username: '<some_db_user>'
+    password: '<some_password>'
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  profiles:
+    active: "default"
+  security:
+    user:
+      name: 'api_user'
+      password: '<some_password>'
+
+logging:
+  level:
+    org:
+      springframework:
+        security: debug
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "info,health"
+
+springdoc:
+  api-docs:
+    path: "/api/api-docs"
+    enabled: true
+  swagger-ui:
+    path: "api/swagger-ui"
+    enabled: true
