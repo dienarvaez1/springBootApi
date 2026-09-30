@@ -11,21 +11,20 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.example.controller.UserController;
 import org.example.controller.UserRequest;
+import org.example.controller.UserResponse;
 import org.example.entities.User;
 import org.example.repo.UserRepo;
 import org.mockito.ArgumentCaptor;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
 public class UserControllerSteps {
@@ -44,37 +43,27 @@ public class UserControllerSteps {
     public void setUp() {
         userRepo = mock(UserRepo.class);
         controller = new UserController(userRepo);
-        when(userRepo.findById(anyInt())).thenAnswer(inv -> storedUsers.stream()
-                .filter(u -> u.getId().equals(inv.getArgument(0)))
-                .findFirst());
-        when(userRepo.findAll(any(Sort.class))).thenAnswer(inv -> List.copyOf(storedUsers));
-        when(userRepo.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        UserRepoStubs.backWith(userRepo, storedUsers);
     }
 
     @Given("the repository contains the following users:")
     public void theRepositoryContains(DataTable table) {
-        for (Map<String, String> row : table.asMaps()) {
-            User user = new User();
-            user.setId(Integer.valueOf(row.get("id")));
-            user.setFirstName(row.get("firstName"));
-            user.setLastName(row.get("lastName"));
-            storedUsers.add(user);
-        }
+        storedUsers.addAll(UserRepoStubs.usersFrom(table));
     }
 
     @When("I request all users")
     public void iRequestAllUsers() {
-        call(() -> controller.findAllUser());
+        call(() -> controller.getUsers());
     }
 
     @When("I request the user with id {int}")
     public void iRequestTheUserWithId(int id) {
-        call(() -> controller.findAUser(id));
+        call(() -> controller.getUser(id));
     }
 
     @When("I create a user {string} {string}")
     public void iCreateAUser(String firstName, String lastName) {
-        call(() -> controller.insertUser(new UserRequest(firstName, lastName)));
+        call(() -> controller.createUser(new UserRequest(firstName, lastName)));
     }
 
     @When("I update user {int} to {string} {string}")
@@ -99,9 +88,9 @@ public class UserControllerSteps {
 
     @Then("the returned user is {string} {string}")
     public void theReturnedUserIs(String firstName, String lastName) {
-        User user = result instanceof ResponseEntity<?> response ? (User) response.getBody() : (User) result;
-        assertThat(user.getFirstName()).isEqualTo(firstName);
-        assertThat(user.getLastName()).isEqualTo(lastName);
+        UserResponse user = result instanceof ResponseEntity<?> response ? (UserResponse) response.getBody() : (UserResponse) result;
+        assertThat(user.firstName()).isEqualTo(firstName);
+        assertThat(user.lastName()).isEqualTo(lastName);
     }
 
     @Then("the request fails with status {int}")
@@ -144,10 +133,10 @@ public class UserControllerSteps {
     public void thereIsAValidationErrorOn(String field) {
         assertThat(violations)
                 .extracting(v -> v.getPropertyPath().toString())
-                .containsExactly(field);
+                .containsOnly(field);
     }
 
-    private void call(java.util.function.Supplier<Object> action) {
+    private void call(Supplier<Object> action) {
         try {
             result = action.get();
         } catch (ResponseStatusException e) {

@@ -18,7 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
         "spring.datasource.password=${E2E_DB_PASSWORD:}",
         "spring.security.user.name=" + E2ESpringConfiguration.USERNAME,
         "spring.security.user.password=" + E2ESpringConfiguration.PASSWORD,
-        "spring.jpa.show-sql=false",
+        "spring.jpa.hibernate.ddl-auto=update",
         "logging.level.org.springframework.security=warn"
 })
 public class E2ESpringConfiguration {

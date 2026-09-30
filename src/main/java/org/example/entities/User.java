@@ -1,6 +1,5 @@
 package org.example.entities;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,7 +7,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -23,9 +22,7 @@ public class User {
     private String firstName;
     private String lastName;
     @CreationTimestamp
-    @JsonProperty("created_at")
-    private Timestamp createdAt;
+    private Instant createdAt;
     @UpdateTimestamp
-    @JsonProperty("updated_at")
-    private Timestamp updatedAt;
+    private Instant updatedAt;
 }

@@ -11,21 +11,17 @@ spring:
     password: ${DB_PASSWORD:}
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      # Check the schema matches the entities; the dev profile creates and updates it instead
+      ddl-auto: validate
     properties:
       hibernate:
-        format_sql: true
+        # Store Instant fields in the existing "timestamp without time zone" columns
+        type:
+          preferred_instant_jdbc_type: TIMESTAMP
   security:
     user:
       name: 'api_user'
       password: ${API_PASSWORD}
-
-logging:
-  level:
-    org:
-      springframework:
-        security: debug
 
 management:
   endpoints:

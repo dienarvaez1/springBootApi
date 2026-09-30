@@ -32,14 +32,14 @@ public class UserApiSimulation extends Simulation {
 
     // Lists the users, then fetches the first one by id when the list is not empty
     private final ScenarioBuilder browseUsers = scenario("Browse users")
-            .exec(http("getUsers")
-                    .get("/api/getUsers")
+            .exec(http("listUsers")
+                    .get("/api/users")
                     .check(status().is(200))
                     .check(jmesPath("[0].id").optional().saveAs("userId")))
             .pause(1)
             .doIf(session -> session.contains("userId")).then(
                     exec(http("getUser")
-                            .get("/api/getUser/#{userId}")
+                            .get("/api/users/#{userId}")
                             .check(status().is(200))));
 
     {

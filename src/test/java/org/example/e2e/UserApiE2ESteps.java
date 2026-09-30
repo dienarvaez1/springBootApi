@@ -131,7 +131,7 @@ public class UserApiE2ESteps {
         for (CreatedUser user : added.values()) {
             String firstName = randomFirstName() + "-renamed";
             String lastName = randomLastName() + "-renamed";
-            HttpResponse<String> put = send("PUT", "/api/updateUser/" + user.id, json(firstName, lastName, null), true);
+            HttpResponse<String> put = send("PUT", "/api/users/" + user.id, json(firstName, lastName, null), true);
             renameResponses.add(put);
             if (put.statusCode() == 200) {
                 user.firstName = firstName;
@@ -143,7 +143,7 @@ public class UserApiE2ESteps {
     @When("I delete each added user")
     public void iDeleteEachAddedUser() throws Exception {
         for (CreatedUser user : added.values()) {
-            deleteResponses.add(send("DELETE", "/api/deleteUser/" + user.id, null, true));
+            deleteResponses.add(send("DELETE", "/api/users/" + user.id, null, true));
             deletedIds.add(user.id);
         }
     }
@@ -151,7 +151,7 @@ public class UserApiE2ESteps {
     @And("I delete the {ordinal} added user")
     public void iDeleteTheNthAddedUser(int position) throws Exception {
         CreatedUser user = nthAdded(position);
-        HttpResponse<String> delete = send("DELETE", "/api/deleteUser/" + user.id, null, true);
+        HttpResponse<String> delete = send("DELETE", "/api/users/" + user.id, null, true);
         assertThat(delete.statusCode()).isEqualTo(204);
         deletedIds.add(user.id);
     }
@@ -182,7 +182,7 @@ public class UserApiE2ESteps {
         }
     }
 
-    @And("each added user has server-set created_at and updated_at timestamps")
+    @And("each added user has server-set createdAt and updatedAt timestamps")
     public void eachAddedUserHasTimestamps() {
         OffsetDateTime testStart = OffsetDateTime.now().minusMinutes(5);
         for (CreatedUser user : added.values()) {
@@ -236,12 +236,12 @@ public class UserApiE2ESteps {
         }
     }
 
-    @And("each renamed user's updated_at moved forward while created_at stayed the same")
+    @And("each renamed user's updatedAt moved forward while createdAt stayed the same")
     public void updatedAtMovedForward() throws Exception {
         for (CreatedUser user : added.values()) {
             JsonNode current = get(user.id);
-            assertThat(timestamp(current, "created_at")).isEqualTo(user.createdAt);
-            assertThat(timestamp(current, "updated_at")).isAfter(user.updatedAt);
+            assertThat(timestamp(current, "createdAt")).isEqualTo(user.createdAt);
+            assertThat(timestamp(current, "updatedAt")).isAfter(user.updatedAt);
         }
     }
 
@@ -287,20 +287,20 @@ public class UserApiE2ESteps {
     // --- Helpers ---
 
     private void addUser(String firstName, String lastName, Integer claimedId) throws Exception {
-        HttpResponse<String> post = send("POST", "/api/addUser", json(firstName, lastName, claimedId), true);
+        HttpResponse<String> post = send("POST", "/api/users", json(firstName, lastName, claimedId), true);
         addResponses.add(post);
         if (post.statusCode() == 201) {
             JsonNode body = objectMapper.readTree(post.body());
             int id = body.get("id").asInt();
             assertThat(added).as("server returned an id that was already in use").doesNotContainKey(id);
             added.put(id, new CreatedUser(id, firstName, lastName,
-                    timestamp(body, "created_at"), timestamp(body, "updated_at")));
+                    timestamp(body, "createdAt"), timestamp(body, "updatedAt")));
         }
     }
 
     private void assertRetrievable(CreatedUser user) throws Exception {
-        HttpResponse<String> get = send("GET", "/api/getUser/" + user.id, null, true);
-        assertThat(get.statusCode()).as("GET /api/getUser/%d", user.id).isEqualTo(200);
+        HttpResponse<String> get = send("GET", "/api/users/" + user.id, null, true);
+        assertThat(get.statusCode()).as("GET /api/users/%d", user.id).isEqualTo(200);
         JsonNode body = objectMapper.readTree(get.body());
         assertThat(body.get("id").asInt()).isEqualTo(user.id);
         assertThat(body.get("firstName").asText()).isEqualTo(user.firstName);
@@ -308,7 +308,7 @@ public class UserApiE2ESteps {
     }
 
     private void assertGone(CreatedUser user) throws Exception {
-        assertThat(send("GET", "/api/getUser/" + user.id, null, true).statusCode()).isEqualTo(404);
+        assertThat(send("GET", "/api/users/" + user.id, null, true).statusCode()).isEqualTo(404);
         assertThat(userRepo.findById(user.id)).isEmpty();
     }
 
@@ -323,13 +323,13 @@ public class UserApiE2ESteps {
     }
 
     private JsonNode list() throws Exception {
-        HttpResponse<String> get = send("GET", "/api/getUsers", null, true);
+        HttpResponse<String> get = send("GET", "/api/users", null, true);
         assertThat(get.statusCode()).isEqualTo(200);
         return objectMapper.readTree(get.body());
     }
 
     private JsonNode get(int id) throws Exception {
-        HttpResponse<String> get = send("GET", "/api/getUser/" + id, null, true);
+        HttpResponse<String> get = send("GET", "/api/users/" + id, null, true);
         assertThat(get.statusCode()).isEqualTo(200);
         return objectMapper.readTree(get.body());
     }

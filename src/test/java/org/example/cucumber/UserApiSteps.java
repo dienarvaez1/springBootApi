@@ -27,7 +27,6 @@ import java.util.TreeSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
@@ -48,19 +47,8 @@ public class UserApiSteps {
 
     @Given("the API has these stored users:")
     public void theApiHasTheseStoredUsers(DataTable table) {
-        for (Map<String, String> row : table.asMaps()) {
-            storedUsers.add(user(Integer.valueOf(row.get("id")), row.get("firstName"), row.get("lastName")));
-        }
-        when(userRepo.findById(anyInt())).thenAnswer(inv -> storedUsers.stream()
-                .filter(u -> u.getId().equals(inv.getArgument(0)))
-                .findFirst());
-        when(userRepo.findAll(any(Sort.class))).thenAnswer(inv -> List.copyOf(storedUsers));
-        // Return a copy so captured arguments keep exactly what the controller passed in
-        when(userRepo.save(any(User.class))).thenAnswer(inv -> {
-            User input = inv.getArgument(0);
-            int id = input.getId() != null ? input.getId() : storedUsers.size() + 1;
-            return user(id, input.getFirstName(), input.getLastName());
-        });
+        storedUsers.addAll(UserRepoStubs.usersFrom(table));
+        UserRepoStubs.backWith(userRepo, storedUsers);
     }
 
     @Given("the API has no stored users")
@@ -86,7 +74,7 @@ public class UserApiSteps {
     @When("an authenticated client creates a user with a first name of {int} characters")
     public void createsAUserWithALongFirstName(int length) throws Exception {
         String body = objectMapper.writeValueAsString(Map.of("firstName", "a".repeat(length), "lastName", "Hopper"));
-        perform("POST", "/api/addUser", body, CucumberSpringConfiguration.PASSWORD);
+        perform("POST", "/api/users", body, CucumberSpringConfiguration.PASSWORD);
     }
 
     @When("an authenticated client sends POST {string} as plain text")
@@ -233,13 +221,5 @@ public class UserApiSteps {
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepo).save(captor.capture());
         return captor.getValue();
-    }
-
-    private static User user(int id, String firstName, String lastName) {
-        User user = new User();
-        user.setId(id);
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
-        return user;
     }
 }
