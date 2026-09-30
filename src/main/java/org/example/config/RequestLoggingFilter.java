@@ -16,9 +16,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 @Component
-public class LoggingUtil extends OncePerRequestFilter {
+public class RequestLoggingFilter extends OncePerRequestFilter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LoggingUtil.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestLoggingFilter.class);
     private static final int MAX_BODY_LENGTH = 1000;
 
     private String getStringValue(byte[] content, String characterEncoding) {
@@ -30,7 +30,7 @@ public class LoggingUtil extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
+        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request, MAX_BODY_LENGTH + 1);
         ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
 
         long startTime = System.currentTimeMillis();

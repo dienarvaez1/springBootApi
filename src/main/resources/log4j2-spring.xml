@@ -29,11 +29,6 @@
             <AppenderRef ref="Console" />
             <AppenderRef ref="RollingFile" />
         </Root>
-
-        <!-- LOG "com.example*" at TRACE level -->
-        <Logger name="com.example" level="trace">
-
-        </Logger>
     </Loggers>
 
 </Configuration>

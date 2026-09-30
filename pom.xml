@@ -8,22 +8,37 @@
     <packaging>jar</packaging>
 
     <name>springBootApi</name>
-    <url>http://maven.apache.org</url>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>21</java.version>
-        <!-- Overrides the version managed by Spring Boot; 1.18.30 does not work on JDK 23+ -->
+        <springdoc.version>2.9.1</springdoc.version>
+        <!-- Latest Lombok, for JDK 26 support; overrides the version managed by Spring Boot -->
         <lombok.version>1.18.48</lombok.version>
-        <cucumber.version>7.15.0</cucumber.version>
-        <rest-assured.version>5.4.0</rest-assured.version>
+        <cucumber.version>7.34.9</cucumber.version>
+        <!-- Cucumber 7.34 needs JUnit Platform 5.14; overrides the version managed by Spring Boot -->
+        <junit-jupiter.version>5.14.4</junit-jupiter.version>
+        <!-- Newer than Spring Boot's managed versions, for JDK 26 support -->
+        <mockito.version>5.24.0</mockito.version>
+        <byte-buddy.version>1.18.14</byte-buddy.version>
+
+        <!-- SonarQube analysis: ./mvnw verify sonar:sonar -Dsonar.token=... (see docker-compose.sonar.yml) -->
+        <sonar.projectKey>springBootApi</sonar.projectKey>
+        <sonar.projectName>springBootApi</sonar.projectName>
+        <sonar.host.url>http://localhost:9000</sonar.host.url>
+        <sonar-maven-plugin.version>5.8.0.7211</sonar-maven-plugin.version>
+        <jacoco.version>0.8.15</jacoco.version>
+
+        <!-- Load tests: ./mvnw gatling:test against a running app (see UserApiSimulation) -->
+        <gatling.version>3.16.0</gatling.version>
+        <gatling-maven-plugin.version>4.21.12</gatling-maven-plugin.version>
+        <!-- Gatling 3.16 needs Netty 4.2; overrides Spring Boot's 4.1. Only Gatling (test scope) uses Netty -->
+        <netty.version>4.2.18.Final</netty.version>
     </properties>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.2</version>
+        <version>3.5.16</version>
         <relativePath/>
     </parent>
 
@@ -32,7 +47,7 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.3.0</version>
+            <version>${springdoc.version}</version>
         </dependency>
 
         <dependency>
@@ -86,13 +101,7 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Test dependencies -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <!-- ${cucumber.version} from properties section -->
+        <!-- Test dependencies: Cucumber unit tests, run on the JUnit Platform -->
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-java</artifactId>
@@ -111,25 +120,49 @@
             <version>${cucumber.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- Spring's MockMvc test support, without spring-boot-starter-test's JUnit Jupiter -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-test-autoconfigure</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-suite</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>json-schema-validator</artifactId>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Gatling load tests; Logback excluded so Gatling logs through Log4j2 like the app -->
         <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>spring-mock-mvc</artifactId>
+            <groupId>io.gatling.highcharts</groupId>
+            <artifactId>gatling-charts-highcharts</artifactId>
+            <version>${gatling.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
     </dependencies>
@@ -140,6 +173,10 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <!-- ./mvnw spring-boot:run uses the local development settings in application-dev.yaml -->
+                    <profiles>
+                        <profile>dev</profile>
+                    </profiles>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
@@ -163,22 +200,75 @@
                 </configuration>
             </plugin>
             <plugin>
+                <!-- Exposes each dependency's jar path as a property, used for the Mockito agent below -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <!-- Test coverage report (target/site/jacoco/jacoco.xml), picked up by SonarQube -->
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>${sonar-maven-plugin.version}</version>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <!-- Load Mockito as a Java agent; newer JDKs restrict attaching it at runtime -->
+                    <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
                     <properties>
+                        <!-- Shared Cucumber settings are in src/test/resources/junit-platform.properties -->
                         <configurationParameters>
-                            cucumber.junit-platform.naming-strategy=long
                             cucumber.plugin=pretty,html:target/site/cucumber-pretty.html
-                            cucumber.publish.quiet=true
-                            cucumber.publish.enable=false
                         </configurationParameters>
                     </properties>
                 </configuration>
             </plugin>
             <plugin>
+                <!-- Runs the *IT end-to-end suite in the integration-test phase (./mvnw verify); needs local Postgres -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <properties>
+                        <!-- Shared Cucumber settings are in src/test/resources/junit-platform.properties -->
+                        <configurationParameters>
+                            cucumber.plugin=pretty,html:target/site/cucumber-e2e.html
+                        </configurationParameters>
+                    </properties>
+                </configuration>
+            </plugin>
+            <plugin>
+                <!-- Not bound to any phase: runs only on ./mvnw gatling:test; report in target/gatling/ -->
+                <groupId>io.gatling</groupId>
+                <artifactId>gatling-maven-plugin</artifactId>
+                <version>${gatling-maven-plugin.version}</version>
             </plugin>
         </plugins>
     </build>

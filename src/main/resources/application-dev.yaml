@@ -1,0 +1,16 @@
+# Local development settings. Active on ./mvnw spring-boot:run (see pom.xml),
+# or elsewhere with SPRING_PROFILES_ACTIVE=dev.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    org:
+      springframework:
+        security: debug
