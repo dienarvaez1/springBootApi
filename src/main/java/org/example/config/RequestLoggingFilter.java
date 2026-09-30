@@ -16,9 +16,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 @Component
-public class LoggingUtil extends OncePerRequestFilter {
+public class RequestLoggingFilter extends OncePerRequestFilter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LoggingUtil.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestLoggingFilter.class);
     private static final int MAX_BODY_LENGTH = 1000;
 
     private String getStringValue(byte[] content, String characterEncoding) {
