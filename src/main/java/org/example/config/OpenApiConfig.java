@@ -13,7 +13,8 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @OpenAPIDefinition(
-        info = @Info(title = "User API", version = "1.0"),
+        info = @Info(title = "User API", version = "1.0",
+                description = "Create, read, update and delete users. Every endpoint requires HTTP Basic auth."),
         security = @SecurityRequirement(name = "basicAuth")
 )
 @SecurityScheme(name = "basicAuth", type = SecuritySchemeType.HTTP, scheme = "basic")
