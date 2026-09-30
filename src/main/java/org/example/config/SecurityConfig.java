@@ -15,7 +15,18 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /*
+     * CSRF protection is disabled deliberately (Sonar java:S4502). This is safe because:
+     *  - The API is stateless: no session or auth cookie exists for a forged request to ride on.
+     *  - Even with browser-cached Basic credentials, a cross-site page can only send "simple"
+     *    requests (GET/POST with form or text bodies). Every state-changing endpoint needs an
+     *    application/json body or PUT/DELETE, both of which require a CORS preflight, and no
+     *    CORS origins are allowed. Form/text bodies are rejected with 415.
+     * Both conditions are covered by user_api.feature ("Cross-site requests cannot change data").
+     * Revisit this if cookie-based login, CORS origins or form-encoded endpoints are ever added.
+     */
     @Bean
+    @SuppressWarnings("java:S4502")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
@@ -23,7 +34,6 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .httpBasic(withDefaults())
-                // Stateless API using HTTP Basic: no session cookie, so CSRF protection does not apply
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();

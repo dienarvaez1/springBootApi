@@ -16,8 +16,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-  profiles:
-    active: "default"
   security:
     user:
       name: 'api_user'
@@ -36,9 +34,8 @@ management:
         include: "info,health"
 
 springdoc:
+  default-produces-media-type: "application/json"
   api-docs:
     path: "/api/api-docs"
-    enabled: true
   swagger-ui:
-    path: "api/swagger-ui"
-    enabled: true
+    path: "/api/swagger-ui"
