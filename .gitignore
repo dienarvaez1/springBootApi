@@ -1,17 +1,14 @@
-/.idea/
-
-/logs/
-
+### Build output ###
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Local secrets ###
+.env
+
 ### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+/.idea/
 *.iws
 *.iml
 *.ipr
@@ -38,7 +35,25 @@ build/
 ### VS Code ###
 .vscode/
 
-### Mac OS ###
-.DS_Store!
-### Local secrets ###
-.env
+### macOS ###
+.DS_Store
+
+### Test results & reports ###
+perf-results/
+surefire-reports/
+failsafe-reports/
+jacoco*.exec
+gatling/
+test-output/
+test-results/
+cucumber-*.html
+cucumber*.json
+TEST-*.xml
+*.jtl
+.scannerwork/
+
+### Application logs ###
+/logs/
+*.log
+*.log.gz
+*.log.[0-9]*
