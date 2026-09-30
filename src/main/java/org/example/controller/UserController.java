@@ -1,35 +1,25 @@
 package org.example.controller;
 
-import org.example.config.LoggingUtil;
+import jakarta.validation.Valid;
 import org.example.entities.User;
 import org.example.repo.UserRepo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.ResponseExtractor;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.net.http.HttpResponse;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 
 @RestController
 @RequestMapping("/api")
 public class UserController {
-    Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
 
-    @Autowired
-    private UserRepo userRepo;
-    private final Map<Integer, User> users = new HashMap<>();
+    private final UserRepo userRepo;
+
+    public UserController(UserRepo userRepo) {
+        this.userRepo = userRepo;
+    }
 
     @GetMapping("/getUsers")
     public List<User> findAllUser() {
@@ -37,35 +27,34 @@ public class UserController {
     }
 
     @GetMapping("/getUser/{id}")
-    public Optional<User> findAUser(@PathVariable Integer id)
-    {
-        return userRepo.findById(id);
+    public User findAUser(@PathVariable Integer id) {
+        return findUserOrThrow(id);
     }
 
     @PostMapping("/addUser")
-    public ResponseEntity<User> insertUser(@RequestBody User user) {
-        User insertUser = userRepo.save(user);
-        return ResponseEntity.ok(insertUser);
+    public ResponseEntity<User> insertUser(@Valid @RequestBody UserRequest request) {
+        User user = new User();
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(userRepo.save(user));
     }
 
     @PutMapping("/updateUser/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Integer id, @RequestBody User user) {
-        User updateUser = userRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not exist with id: " + id));
-
-        updateUser.setFirstName(user.firstName());
-        updateUser.setLastName(user.lastName());
-        updateUser.setUpdatedAt(user.updated_at());
-        users.put(id, updateUser);
-        userRepo.save(updateUser);
-        return ResponseEntity.ok(updateUser);
+    public User updateUser(@PathVariable Integer id, @Valid @RequestBody UserRequest request) {
+        User user = findUserOrThrow(id);
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        return userRepo.save(user);
     }
 
     @DeleteMapping("/deleteUser/{id}")
-    public void deleteUser(@PathVariable Integer id) {
-            User deleteUser = userRepo.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not exist with id: " + id));
-            userRepo.delete(deleteUser);
+    public ResponseEntity<Void> deleteUser(@PathVariable Integer id) {
+        userRepo.delete(findUserOrThrow(id));
+        return ResponseEntity.noContent().build();
+    }
 
+    private User findUserOrThrow(Integer id) {
+        return userRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not exist with id: " + id));
     }
 }

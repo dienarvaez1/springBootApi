@@ -2,10 +2,13 @@ server:
   port: 8088
 
 spring:
+  config:
+    # Local secrets (DB_USERNAME, DB_PASSWORD, API_PASSWORD) live in a git-ignored .env file
+    import: "optional:file:.env[.properties]"
   datasource:
     url: jdbc:postgresql://127.0.0.1:5432/springboot_app
-    username: '<some_db_user>'
-    password: '<some_password>'
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD:}
   jpa:
     hibernate:
       ddl-auto: update
@@ -18,7 +21,7 @@ spring:
   security:
     user:
       name: 'api_user'
-      password: '<some_password>'
+      password: ${API_PASSWORD}
 
 logging:
   level:

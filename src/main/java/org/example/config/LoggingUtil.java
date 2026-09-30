@@ -12,55 +12,53 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class LoggingUtil extends OncePerRequestFilter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggingUtil.class);
+    private static final int MAX_BODY_LENGTH = 1000;
 
-
-    private String getStringValue(byte[] contentAsByteArray, String characterEncoding) {
-        try {
-            return new String(contentAsByteArray, 0, contentAsByteArray.length, characterEncoding);
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        return "";
+    private String getStringValue(byte[] content, String characterEncoding) {
+        Charset charset = characterEncoding != null ? Charset.forName(characterEncoding) : StandardCharsets.UTF_8;
+        String body = new String(content, charset);
+        return body.length() > MAX_BODY_LENGTH ? body.substring(0, MAX_BODY_LENGTH) + "...(truncated)" : body;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        // TODO Auto-generated method stub
         ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
         ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
 
         long startTime = System.currentTimeMillis();
-        filterChain.doFilter(requestWrapper, responseWrapper);
-        long timeTaken = System.currentTimeMillis() - startTime;
+        try {
+            filterChain.doFilter(requestWrapper, responseWrapper);
+        } finally {
+            long timeTaken = System.currentTimeMillis() - startTime;
+            int status = responseWrapper.getStatus();
 
-        String requestBody = getStringValue(requestWrapper.getContentAsByteArray(),
-                request.getCharacterEncoding());
-        String responseBody = getStringValue(responseWrapper.getContentAsByteArray(),
-                response.getCharacterEncoding());
+            // Never log the Authorization header: it carries the Basic auth credentials
+            String summary = "API CLIENT REQUEST: CLIENT={}; METHOD={}; ENDPOINT={}; PARAMS={}; RESPONSE CODE={}; DURATION={}ms";
+            Object[] args = {request.getRemoteHost(), request.getMethod(), request.getRequestURI(),
+                    request.getQueryString(), status, timeTaken};
+            if (status >= 500) {
+                LOGGER.error(summary, args);
+            } else if (status >= 400) {
+                LOGGER.warn(summary, args);
+            } else {
+                LOGGER.info(summary, args);
+            }
 
-        int resCode = (response.getStatus());
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("REQUEST BODY={}; RESPONSE={}",
+                        getStringValue(requestWrapper.getContentAsByteArray(), request.getCharacterEncoding()),
+                        getStringValue(responseWrapper.getContentAsByteArray(), response.getCharacterEncoding()));
+            }
 
-        //String resTrailer = String.valueOf((response.getHeader("Set-Cookie")));
-
-        if (resCode == 200) {
-            LOGGER.info
-                    ( "API CLIENT REQUEST: CLIENT={}; AUTH={}; METHOD={}; TRAILERS={}; ENDPOINT={}; PARAMS={}; RESPONSE CODE={}; DURATION={}; REQUEST BODY={}; RESPONSE={}",
-                            request.getRemoteHost(), request.getHeader("Authorization"), request.getMethod(), response.getTrailerFields(), request.getRequestURI(), request.getParameterMap(), response.getStatus(), timeTaken, requestBody, responseBody
-                    );
-        } else {
-            LOGGER.error
-                    ( "API CLIENT REQUEST: CLIENT={}; AUTH={}; METHOD={}; TRAILERS={}; ENDPOINT={}; PARAMS={}; RESPONSE CODE={}; DURATION={}; REQUEST BODY={}; RESPONSE={}",
-                            request.getRemoteHost(), request.getHeader("Authorization"), request.getMethod(), response.getTrailerFields(), request.getRequestURI(), request.getParameterMap(), response.getStatus(), timeTaken, requestBody, responseBody
-                    );
+            responseWrapper.copyBodyToResponse();
         }
-
-        responseWrapper.copyBodyToResponse();
     }
 }
