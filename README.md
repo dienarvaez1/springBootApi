@@ -1,5 +1,7 @@
 # springBootApi
 
+[![CI](https://github.com/dienarvaez1/springBootApi/actions/workflows/ci.yml/badge.svg)](https://github.com/dienarvaez1/springBootApi/actions/workflows/ci.yml)
+
 A sample Spring Boot REST API for managing users, backed by PostgreSQL and protected with HTTP Basic auth.
 
 ## Requirements
@@ -119,6 +121,10 @@ set -a; source .env; set +a; ./mvnw gatling:test
 ```
 
 Tune with `USERS` (default 200), `RAMP_SECONDS` (default 30) and `BASE_URL`.
+
+GitHub Actions runs `./mvnw verify` on every push to `main` and every pull request, with a
+Postgres service container for the end-to-end suite (`.github/workflows/ci.yml`). The reports
+are attached to each run as the `test-reports` artifact.
 
 Reports: Cucumber in `target/site/cucumber-*.html`, coverage in `target/site/jacoco/`,
 Gatling in `target/gatling/`.
