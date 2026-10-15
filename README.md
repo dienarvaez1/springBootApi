@@ -4,6 +4,14 @@
 
 A sample Spring Boot REST API for managing users, backed by PostgreSQL and protected with HTTP Basic auth.
 
+## Project purpose: quality engineering for Java REST APIs
+
+The springBootApi project serves as a practical environment for applying software quality engineering principles to Java Spring Boot REST API development. It integrates risk-based test design, behavior-driven development (BDD) with Cucumber, API functional testing, PostgreSQL-backed integration and end-to-end testing, performance testing with Gatling, and automated CI/CD validation through GitHub Actions.
+
+Leveraging my 20 years of software quality assurance experience, I use this project to evaluate API contracts, request validation, authentication, data integrity, error handling, performance, and regression risks across the application lifecycle. I also incorporate Claude Code into the test development and code analysis workflow to assess how AI-assisted engineering can improve automation efficiency, test coverage, and defect detection while maintaining independent verification of generated code and test results.
+
+The objective is to demonstrate a systematic, automation-driven approach to backend quality engineering that combines established QA methodologies, modern Java technologies, and AI-assisted development to deliver reliable, maintainable, and verifiable software.
+
 ## Requirements
 
 - JDK 21 or newer (the build targets Java 21)
